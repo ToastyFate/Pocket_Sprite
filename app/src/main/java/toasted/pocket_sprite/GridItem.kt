@@ -1,5 +1,10 @@
 package toasted.pocket_sprite
 
+
+import android.graphics.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+
 import androidx.compose.ui.graphics.Color
 
 class GridItem(name: String, color: Color, xPixels: Int, yPixels: Int) {
@@ -32,6 +37,8 @@ class GridItem(name: String, color: Color, xPixels: Int, yPixels: Int) {
     fun getXY(): Pair<Int, Int> {
         return Pair(xPixels, yPixels)
     }
+
+
 
 
 }
