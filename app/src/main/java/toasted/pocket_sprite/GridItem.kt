@@ -7,15 +7,14 @@ import androidx.compose.ui.geometry.Size
 
 import androidx.compose.ui.graphics.Color
 
-class GridCell(name: String, color: Color, x: Int, y: Int) {
+class GridItem(color: Color, x: Int, y: Int) {
 
-    private var name: String = "None"
+
     private var color: Color = Color.White
     private var x: Int = 0
     private var y: Int = 0
 
     init{
-        this.name = name
         this.color = color
         this.x = x
         this.y = y
@@ -37,6 +36,7 @@ class GridCell(name: String, color: Color, x: Int, y: Int) {
     fun getXY(): Pair<Int, Int> {
         return Pair(x, y)
     }
+
 
 
 
