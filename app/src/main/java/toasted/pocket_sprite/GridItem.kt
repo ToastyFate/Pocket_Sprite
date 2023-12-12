@@ -37,6 +37,9 @@ class GridItem(color: Color, x: Int, y: Int) {
         return Pair(x, y)
     }
 
+    fun copy(color: Color): GridItem {
+        return GridItem(color, x, y)
+    }
 
 
 
