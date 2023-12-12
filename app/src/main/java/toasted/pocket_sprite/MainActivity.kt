@@ -3,7 +3,6 @@
 package toasted.pocket_sprite
 
 import android.os.Bundle
-import android.util.Log
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,15 +26,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
+import kotlin.math.sqrt
 
-val gridWidth = 256f
-val gridHeight = 256f
+const val gridWidth = 256f
 val pixelSize = 16.dp
 val gridColor = Color.DarkGray
 val selectedColor = Color.Black
 
 
-class MainActivity() : ComponentActivity() {
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +56,7 @@ class MainActivity() : ComponentActivity() {
 
 @Composable
 fun PixelArtApp(){
-    val gridSize = Math.sqrt(gridWidth.toDouble()).toInt()
+    val gridSize = sqrt(gridWidth.toDouble()).toInt()
     val gridState = remember { mutableStateListOf<GridItem>().apply {
         for(y in 0 until gridSize) {
             for(x in 0 until  gridSize) {
@@ -103,7 +102,7 @@ fun PixelArtCanvas(gridState: MutableList<GridItem>, gridSize: Int, pixelSize: D
         }
 
     ){
-        gridState.forEach() {
+        gridState.forEach {
             val x = it.getXY().first
             val y = it.getXY().second
             val color = it.getColor()
