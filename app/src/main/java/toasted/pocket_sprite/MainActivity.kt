@@ -3,6 +3,7 @@
 package toasted.pocket_sprite
 
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,13 +37,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.constraintlayout.widget.ConstraintSet.Motion
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 var gridWidth = 256f
+var gridHeight = 256f
 var pixelSize = 16.dp
 val gridColor = Color.DarkGray
 val selectedColor = Color.Black
+val cellSize = pixelSize.value.toInt()
 
 
 class MainActivity : ComponentActivity() {
@@ -66,84 +72,83 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun PixelArtApp(){
-    val gridSize = sqrt(gridWidth.toDouble()).toInt()
+    val gridSize = (gridWidth * gridHeight).toInt()
     val gridState = remember { mutableStateListOf<GridItem>().apply {
-        for(y in 0 until gridSize) {
-            for(x in 0 until  gridSize) {
+        for(y in 0 until cellSize) {
+            for(x in 0 until  cellSize) {
                 add(GridItem(color = gridColor, x = x, y = y))
             }
 
         }
         }}
-    PixelArtCanvas(gridState = gridState, gridSize = gridSize, pixelSize = pixelSize)
-}
-
-@Composable
-fun infoText(gridSize: Int, pixelSize: Dp, scale: Float) {
-    Box(contentAlignment = Alignment.TopStart, modifier = Modifier
-        .background(Color.White)
-    ){
-        Text(text = "gridSize: $gridSize \n pixelSize: $pixelSize \n scale: $scale", color = Color.Black, modifier = Modifier
-            .align(Alignment.TopStart)
-            .background(Color.White))
-    }
+    PixelArtCanvas(gridState = gridState, cellSize = cellSize, pixelSize = pixelSize)
 }
 
 
+
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun PixelArtCanvas(gridState: MutableList<GridItem>, gridSize: Int, pixelSize: Dp) {
+fun PixelArtCanvas(gridState: MutableList<GridItem>, cellSize: Int, pixelSize: Dp) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
+    var numberOfPointers by remember { mutableStateOf(0) }
     val density = LocalDensity.current
-    infoText(gridSize = gridSize, pixelSize = pixelSize, scale = scale)
     Box(contentAlignment = Alignment.Center, modifier = Modifier
         .fillMaxSize()
         .background(Color.Gray)
-    ) {
-        val inverseScale = 1f / scale
-        val adjustedOffset = -offset / scale
-        Canvas(modifier = Modifier
-            .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)
-            .pointerInput(Unit) {
-                detectTransformGestures { _, pan, Zoom, _ ->
-                    scale *= Zoom
+        .graphicsLayer(
+            scaleX = scale,
+            scaleY = scale,
+            translationX = offset.x,
+            translationY = offset.y
+        )
+        .pointerInput(Unit) {
+            detectTransformGestures { _, pan, zoom, _ ->
+                scale *= zoom
+
+                if (numberOfPointers > 1) {
                     offset += pan
                 }
             }
+        }
+
+    ) {
+        Canvas(modifier = Modifier
             .size(256.dp)
             .background(Color.LightGray)
             .pointerInteropFilter { event ->
                 val pixelValue = with(density) { pixelSize.toPx() }
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        val adjustedx = (event.x * inverseScale) + adjustedOffset.x
-                        val adjustedy = (event.y * inverseScale) + adjustedOffset.y
+                when (event.action){
 
-                        val x = adjustedx.toInt() / pixelValue.toInt()
-                        val y = adjustedy.toInt() / pixelValue.toInt()
 
-                        val index = gridState.indexOfFirst { it.getXY().first == x && it.getXY().second == y }
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                        numberOfPointers = 1
+                        val adjustedX = event.x / scale
+                        val adjustedY = event.y / scale
+                        val x = (adjustedX / pixelValue).toInt()
+                        val y = (adjustedY / pixelValue).toInt()
+                        Log.d("PixelArtCanvas", "number of pointers: $numberOfPointers")
+                        val index = y * cellSize + x
                         if (index in gridState.indices) {
                             gridState[index] = gridState[index].copy(color = selectedColor)
                         }
-                        true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val adjustedx = (event.x * inverseScale) + adjustedOffset.x
-                        val adjustedy = (event.y * inverseScale) + adjustedOffset.y
-
-                        val x = adjustedx.toInt() / pixelValue.toInt()
-                        val y = adjustedy.toInt() / pixelValue.toInt()
-
-                        val index = gridState.indexOfFirst { it.getXY().first == x && it.getXY().second == y }
-                        if (index in gridState.indices) {
-                            gridState[index] = gridState[index].copy(color = selectedColor)
-                        }
-                        true
                     }
 
-                    else -> false
+                    MotionEvent.ACTION_POINTER_DOWN -> {
+                        numberOfPointers++
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        numberOfPointers = 0
+                        Log.d("PixelArtCanvas", "number of pointers: $numberOfPointers")
+                    }
+
+                    MotionEvent.ACTION_POINTER_UP -> {
+                        numberOfPointers--
+                    }
+
                 }
+                true
             }
 
         ) {
@@ -160,7 +165,10 @@ fun PixelArtCanvas(gridState: MutableList<GridItem>, gridSize: Int, pixelSize: D
             }
 
         }
+
     }
+    Text(text = "gridSize: ${gridWidth.toInt()} x ${gridHeight.toInt()} \n cellSize: $cellSize \n scale: ${(scale*100).toInt()}%", color = Color.Black, modifier = Modifier
+    )
 }
 
 @Preview(showBackground = true)
