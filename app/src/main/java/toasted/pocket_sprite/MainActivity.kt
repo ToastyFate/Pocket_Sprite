@@ -9,9 +9,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,16 +36,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import androidx.constraintlayout.widget.ConstraintSet.Motion
+import androidx.compose.ui.unit.sp
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
-import kotlin.math.pow
-import kotlin.math.sqrt
 
-var gridWidth = 256f
-var gridHeight = 256f
+var gridWidth = 2000f
+var gridHeight = 2000f
 var pixelSize = 16.dp
 val gridColor = Color.DarkGray
 val selectedColor = Color.Black
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    StartScreen()
                     ShowPixelArtCanvas()
                 }
             }
@@ -68,19 +70,26 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Preview
+@Composable
+fun StartScreenPreview() {
+    Pocket_SpriteTheme {
+        StartScreen()
+    }
+}
 
 
 @Composable
 fun PixelArtApp(){
-    val gridSize = (gridWidth * gridHeight).toInt()
+    val cellsX = (gridWidth / pixelSize.value)
+    val cellsY = (gridHeight / pixelSize.value)
+    val gridSize = cellsX * cellsY
     val gridState = remember { mutableStateListOf<GridItem>().apply {
-        for(y in 0 until cellSize) {
-            for(x in 0 until  cellSize) {
-                add(GridItem(color = gridColor, x = x, y = y))
-            }
-
+        for (i in 0 until gridSize.toInt()) {
+            add(GridItem(color = gridColor, x = i % cellsX.toInt(), y = i / cellsX.toInt()))
         }
-        }}
+    }
+    }
     PixelArtCanvas(gridState = gridState, cellSize = cellSize, pixelSize = pixelSize)
 }
 
@@ -91,7 +100,7 @@ fun PixelArtApp(){
 fun PixelArtCanvas(gridState: MutableList<GridItem>, cellSize: Int, pixelSize: Dp) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
-    var numberOfPointers by remember { mutableStateOf(0) }
+    var numberOfPointers by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
     Box(contentAlignment = Alignment.Center, modifier = Modifier
         .fillMaxSize()
@@ -114,11 +123,12 @@ fun PixelArtCanvas(gridState: MutableList<GridItem>, cellSize: Int, pixelSize: D
 
     ) {
         Canvas(modifier = Modifier
-            .size(256.dp)
+            .size(gridWidth.dp, gridHeight.dp)
             .background(Color.LightGray)
             .pointerInteropFilter { event ->
                 val pixelValue = with(density) { pixelSize.toPx() }
-                when (event.action){
+                Log.d("PixelArtCanvas", "pixelValue: $pixelValue")
+                when (event.action) {
 
 
                     MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
@@ -129,6 +139,7 @@ fun PixelArtCanvas(gridState: MutableList<GridItem>, cellSize: Int, pixelSize: D
                         val y = (adjustedY / pixelValue).toInt()
                         Log.d("PixelArtCanvas", "number of pointers: $numberOfPointers")
                         val index = y * cellSize + x
+                        Log.d("PixelArtCanvas", "index: $index")
                         if (index in gridState.indices) {
                             gridState[index] = gridState[index].copy(color = selectedColor)
                         }
