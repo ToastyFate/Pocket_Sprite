@@ -1,13 +1,17 @@
 package toasted.pocket_sprite.viewmodel
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.IOException
 
-class MyViewModel : ViewModel() {
+class StartViewModel : ViewModel() {
 
     private val _fileContent = MutableLiveData<String>()
     val fileContent: LiveData<String> = _fileContent
@@ -30,13 +34,42 @@ class MyViewModel : ViewModel() {
         _showOpenProjectDialog.value = show
     }
 
-    fun createProject(projectName: String, width: Int, height: Int) {
-        viewModelScope.launch {
-            val projectDir = File("MyProjects/$projectName")
-            projectDir.mkdir()
-            val projectFile = File(projectDir, "$projectName.psp")
-            projectFile.createNewFile()
-            projectFile.writeText("$width,$height")
+    fun createProject(context: Context, projectName: String, width: Int, height: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val projectsDir = File(context.filesDir, "MyProjects")
+                if (!projectsDir.exists()) {
+                    projectsDir.mkdir()
+                    Log.d("StartViewModel", "Created MyProjects directory")
+                }
+
+                val projectDir = File(projectsDir, projectName)
+                if (!projectDir.exists()) {
+                    projectDir.mkdir()
+                    Log.d("StartViewModel", "Created $projectName directory")
+                }
+
+                val projectFile = File(projectDir, "$projectName.txt")
+                if (!projectFile.exists()) {
+                    projectFile.createNewFile()
+                    Log.d("StartViewModel", "Created $projectName.txt file")
+                }
+
+                val content = "$width,$height"
+                projectFile.writeText(content)
+            } catch (e: IOException) {
+                // Handle the exception, e.g., log it or inform the user
+                Log.e("StartViewModel", "Error creating project: ${e.message}")
+            }
+        }
+    }
+
+    fun getProjectList(context: Context): List<String> {
+        val projectsDir = File(context.filesDir, "MyProjects")
+        return if (projectsDir.exists()) {
+            projectsDir.list()?.toList() ?: emptyList()
+        } else {
+            emptyList()
         }
     }
 
