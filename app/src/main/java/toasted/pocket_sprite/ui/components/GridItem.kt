@@ -1,9 +1,5 @@
-package toasted.pocket_sprite
+package toasted.pocket_sprite.ui.components
 
-
-import android.graphics.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 
 import androidx.compose.ui.graphics.Color
 
@@ -37,6 +33,9 @@ class GridItem(color: Color, x: Int, y: Int) {
         return Pair(x, y)
     }
 
+    fun copy(color: Color): GridItem {
+        return GridItem(color, x, y)
+    }
 
 
 
