@@ -1,9 +1,5 @@
-package toasted.pocket_sprite
+package toasted.pocket_sprite.ui.components
 
-
-import android.graphics.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 
 import androidx.compose.ui.graphics.Color
 

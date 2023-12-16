@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalComposeUiApi::class)
 
-package toasted.pocket_sprite
+package toasted.pocket_sprite.ui.screens
 
 import android.os.Bundle
 import android.util.Log
@@ -9,11 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,12 +34,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
+import toasted.pocket_sprite.ui.components.GridItem
+import toasted.pocket_sprite.data.getProjectDirectory
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
+import toasted.pocket_sprite.viewmodel.MyViewModel
 
 var gridWidth = 2000f
 var gridHeight = 2000f
@@ -55,26 +54,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val projectDir = getProjectDirectory(this, "Projects")
         setContent {
             Pocket_SpriteTheme {
                 Surface(
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    StartScreen()
-                    ShowPixelArtCanvas()
+                    StartScreen(projectDir, viewModel = MyViewModel())
                 }
             }
         }
 
-    }
-}
-
-@Preview
-@Composable
-fun StartScreenPreview() {
-    Pocket_SpriteTheme {
-        StartScreen()
     }
 }
 
