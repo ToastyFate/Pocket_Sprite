@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -35,13 +36,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
-import toasted.pocket_sprite.ui.components.GridItem
+import androidx.compose.ui.unit.dp
 import toasted.pocket_sprite.data.getProjectDirectory
+import toasted.pocket_sprite.ui.components.GridItem
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
-import toasted.pocket_sprite.viewmodel.StartViewModel
-import androidx.compose.runtime.livedata.observeAsState
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
@@ -54,7 +53,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    StartScreen(projectDir, viewModel = StartViewModel())
+                    //StartScreen(projectDir, viewModel = StartViewModel())
+                    PixelArtApp(viewModel = MainViewModel())
                 }
             }
         }
@@ -67,17 +67,16 @@ class MainActivity : ComponentActivity() {
 fun PixelArtApp(viewModel: MainViewModel = MainViewModel()){
     val gridWidth by viewModel.gridWidth.observeAsState(initial = 256f)
     val gridHeight by viewModel.gridHeight.observeAsState(initial = 256f)
-    val pixelSize by viewModel.pixelSize.observeAsState(initial = 16.dp)
+    val pixelSize by viewModel.pixelSize.observeAsState(initial = 1.dp)
     val gridColor by viewModel.gridColor.observeAsState(initial = Color.DarkGray)
     val selectedColor by viewModel.selectedColor.observeAsState(initial = Color.Black)
     val cellSize by viewModel.cellSize.observeAsState(initial = 16f)
 
-    val cellsX = (gridWidth / pixelSize.value)
-    val cellsY = (gridHeight / pixelSize.value)
+
     val gridState = remember { mutableStateListOf<GridItem>().apply {
-        for (i in 0 until cellsY.toInt()) {
-            for (j in 0 until cellsX.toInt()) {
-                add(GridItem(color = gridColor, x = i , y = j))
+        for (i in 0 until gridHeight.toInt()) {
+            for (j in 0 until gridWidth.toInt()) {
+                add(GridItem(color = gridColor, x = j , y = i))
             }
         }
     }
@@ -92,69 +91,120 @@ fun PixelArtApp(viewModel: MainViewModel = MainViewModel()){
 @Composable
 fun PixelArtCanvas(gridState: MutableList<GridItem>, cellSize: Int, pixelSize: Dp,
                    gridWidth: Float, gridHeight: Float, selectedColor: Color) {
+    val pixelValue = with(LocalDensity.current) { pixelSize.toPx() }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var numberOfPointers by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier
         .fillMaxSize()
         .background(Color.Black)
-        .graphicsLayer(
-            scaleX = scale,
-            scaleY = scale,
-            translationX = offset.x,
-            translationY = offset.y
-        )
-        .pointerInput(Unit) {
-            detectTransformGestures { _, pan, zoom, _ ->
-                scale *= zoom
 
-                if (numberOfPointers > 1) {
-                    offset += pan
-                }
-            }
-        }
 
     ) {
         Canvas(
             modifier = Modifier
-                .size(gridWidth.dp, gridHeight.dp)
+                .size((cellSize * gridWidth).dp, (cellSize * gridHeight).dp)
                 .background(Color.White)
-                .pointerInteropFilter { event ->
-                    val pixelValue = with(density) { pixelSize.toPx() }
-                    val adjustedX = (event.x) / scale
-                    val adjustedY = (event.y) / scale
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    translationX = offset.x,
+                    translationY = offset.y
+                )
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale *= zoom
 
-                    val cellX = (adjustedX / pixelValue).toInt().coerceIn(0, (cellSize - 1))
-                    val cellY = (adjustedY / pixelValue).toInt().coerceIn(0, (cellSize - 1))
-                    val index = cellY * cellSize + cellX
-
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                            if (index in gridState.indices) {
-                                gridState[index] = gridState[index].copy(color = Color.Black) // Update the cell color
-                            }
-                            true
+                        if (numberOfPointers > 1) {
+                            offset += pan
                         }
-                        else -> false
                     }
                 }
+                .pointerInteropFilter { event ->
+                    Log.d("TouchTest", "Action: ${event.action}")
+                    Log.d("TouchTest", "Event type: $event")
+                    Log.d("TouchTest", "Pointer count: ${event.pointerCount}")
+
+                    val x = (event.x) / scale
+                    val y = (event.y) / scale
+                    val cellX = (x /pixelValue).toInt()
+                    Log.d("TouchTest", "$pixelValue")
+                    val cellY = (y /pixelValue).toInt()
+                    val index = cellY * gridHeight.toInt() + cellX
+                    Log.d("TouchTest", "Index: $index")
+
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            if (event.pointerCount == 1 && index in gridState.indices) {
+                                gridState[index] = gridState[index].copy(color = Color.Black) // Update the cell color
+                                Log.d("TouchTest", "Action down at: ${event.x}, ${event.y}")
+                            }
+                            numberOfPointers = event.pointerCount
+                            true
+                        }
+
+                        MotionEvent.ACTION_POINTER_DOWN -> {
+                            Log.d("TouchTest", "Pointer down at: ${event.x}, ${event.y}")
+                            numberOfPointers = event.pointerCount
+                            true
+                        }
+
+                        MotionEvent.ACTION_MOVE -> {
+                            if (event.pointerCount == 1 && index in gridState.indices) {
+                                gridState[index] =
+                                    gridState[index].copy(color = Color.Black) // Update the cell color
+                                for (i in 0 until event.historySize) {
+                                    val histX = (event.getHistoricalX(i)) / scale
+                                    val histY = (event.getHistoricalY(i)) / scale
+                                    val histCellX = (histX / pixelValue).toInt()
+                                    val histCellY = (histY / pixelValue).toInt()
+                                    val histIndex = histCellY * gridHeight.toInt() + histCellX
+
+                                    if (histIndex in gridState.indices) {
+                                        gridState[histIndex] =
+                                            gridState[histIndex].copy(color = selectedColor)
+                                    }
+                                }
+                            }
+                            numberOfPointers = event.pointerCount
+                            Log.d("TouchTest", "Action move at: ${event.x}, ${event.y}")
+                            true
+                        }
+
+                        MotionEvent.ACTION_UP -> {
+                            Log.d("TouchTest", "Action up at: ${event.x}, ${event.y}")
+                            numberOfPointers = event.pointerCount
+                            true
+                        }
+
+                        MotionEvent.ACTION_POINTER_UP -> {
+                            Log.d("TouchTest", "Pointer up at: ${event.x}, ${event.y}")
+                            numberOfPointers = event.pointerCount
+                            true
+                        }
+
+
+                            else -> false
+
+                    }
+
+                }
+
         ) {
             gridState.forEach {
                 val x = it.getXY().first
                 val y = it.getXY().second
                 val color = it.getColor()
-                val pixelValue = with(density) { pixelSize.toPx() }
                 drawRect(
                     color = color,
-                    topLeft = Offset(x * pixelValue, y * pixelValue),
-                    size = Size(pixelValue, pixelValue)
+                    topLeft = Offset(x *pixelValue, y * pixelValue),
+                    size = Size(pixelSize.toPx(), pixelSize.toPx())
                 )
             }
         }
     }
-    Text(text = "gridSize: ${gridWidth.toInt()} x ${gridHeight.toInt()} \n cellSize: $cellSize \n scale: ${(scale*100).toInt()}%", color = Color.Black, modifier = Modifier
+    Text(text = "gridSize: ${gridWidth} x ${gridHeight} \n cellSize: $cellSize \n scale: ${(scale*100).toInt()}%", color = Color.Black, modifier = Modifier
     )
 }
 
