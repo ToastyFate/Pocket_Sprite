@@ -2,23 +2,24 @@
 
 package toasted.pocket_sprite.ui.screens
 
+import android.graphics.Bitmap
 import android.os.Bundle
-import android.util.Log
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,8 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,34 +34,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import toasted.pocket_sprite.data.getProjectDirectory
-import toasted.pocket_sprite.ui.components.GridItem
+import androidx.compose.ui.unit.sp
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
+
 class MainActivity : ComponentActivity() {
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val projectDir = getProjectDirectory(this, "Projects")
+       // val projectDir = getProjectDirectory(this, "Projects")
         setContent {
             Pocket_SpriteTheme {
-                Surface(
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    //StartScreen(projectDir, viewModel = StartViewModel())
-                    PixelArtApp()
-                }
+                //StartScreen(projectDir, viewModel = StartViewModel())
+                val mainViewModel = MainViewModel()
+                PixelArtApp(mainViewModel)
             }
         }
 
@@ -71,43 +67,64 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun PixelArtApp(){
-    PixelArtCanvas()
+fun PixelArtAppPreview(){
+    PixelArtApp(MainViewModel())
+}
+
+@Composable
+fun PixelArtApp(viewModel: MainViewModel) {
+
+    viewModel.createBitmap(LocalDensity.current)
+
+
+    Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Gray, MaterialTheme.shapes.extraSmall)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+        ) {
+
+            ColorPalette(viewModel)
+
+            InfoBox(viewModel)
+
+            PixelArtCanvas(viewModel)
+
+        }
+    }
 }
 
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun PixelArtCanvas(viewModel: MainViewModel = MainViewModel()) {
-
-    var scale by remember { mutableFloatStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-    var numberOfPointers by remember { mutableIntStateOf(0) }
-    val gridState by viewModel.gridState.observeAsState()
-    val gridWidth by viewModel.gridWidth.observeAsState(initial = 64f)
-    val gridHeight by viewModel.gridHeight.observeAsState(initial = 64f)
-    val pixelSize by viewModel.pixelSize.observeAsState( initial = 1.dp)
-    val pixelValue = with(LocalDensity.current) { pixelSize!!.toPx() }
-    val cellSize by viewModel.cellSize.observeAsState( initial = 16f)
+fun ColorPalette(viewModel: MainViewModel) {
     val colorList by viewModel.colorList.observeAsState()
 
-    Column( modifier = Modifier
-        .fillMaxSize()
+    Box(modifier = Modifier
+        .wrapContentSize(Alignment.Center)
+        .background(MaterialTheme.colorScheme.secondary, MaterialTheme.shapes.extraSmall)
     ) {
-        Row  {
+
+        Row(horizontalArrangement = Arrangement.SpaceEvenly,modifier = Modifier
+            .wrapContentSize(Alignment.Center)
+            .background(MaterialTheme.colorScheme.secondary, MaterialTheme.shapes.extraSmall)
+
+        ) {
             for (i in 0 until colorList!!.size) {
                 Box(modifier = Modifier
                     .size(24.dp)
-                    .padding(2.dp)
-                    .background(colorList!![i])
+                    .padding(1.5.dp)
+                    .background(colorList!![i], MaterialTheme.shapes.extraSmall)
                     .pointerInteropFilter { event ->
                         when (event.action) {
                             MotionEvent.ACTION_DOWN -> {
                                 viewModel.selectedColor.value = colorList!![i]
-                                Log.d("TouchTest", "Color selected: ${colorList!![i]}")
+                                //                                Log.d("TouchTest", "Color selected: ${colorList!![i]}")
                                 true
                             }
+
                             else -> false
                         }
                     }
@@ -115,118 +132,187 @@ fun PixelArtCanvas(viewModel: MainViewModel = MainViewModel()) {
                 )
             }
         }
+    }
+}
 
+@Composable
+fun InfoBox(viewModel: MainViewModel) {
+    val gridWidth by viewModel.gridWidth.observeAsState(initial = 64.dp)
+    val gridHeight by viewModel.gridHeight.observeAsState(initial = 64.dp)
 
-        Box(
-            contentAlignment = Alignment.Center, modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-
-
-        ) {
-
-            Canvas(
-                modifier = Modifier
-                    .size((gridWidth)!!.dp , (gridHeight)!!.dp)
-                    .background(Color.White)
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        translationX = offset.x,
-                        translationY = offset.y
-                    )
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            scale *= zoom
-
-                            if (numberOfPointers > 1) {
-                                offset += pan
-                            }
-                        }
-                    }
-                    .pointerInteropFilter { event ->
-                        Log.d("TouchTest", "Action: ${event.action}")
-                        Log.d("TouchTest", "Event type: $event")
-                        Log.d("TouchTest", "Pointer count: ${event.pointerCount}")
-
-                        val x = (event.x ) / scale
-                        val y = (event.y ) / scale
-                        val cellX = (x / (pixelValue)).toInt()
-                        Log.d("TouchTest", "$pixelValue")
-                        val cellY = (y / (pixelValue)).toInt()
-                        val index = cellY * gridHeight.toInt() + cellX
-                        Log.d("TouchTest", "Index: $index")
-
-                        when (event.action) {
-                            MotionEvent.ACTION_DOWN -> {
-                                if (event.pointerCount == 1 && index in gridState!!.indices) {
-                                    viewModel.setGridItemColor(viewModel.getGridItemIndex(cellX, cellY), viewModel.selectedColor.value!!)
-                                    Log.d("TouchTest", "Action down at: ${event.x}, ${event.y}")
-                                }
-                                numberOfPointers = event.pointerCount
-                                true
-                            }
-
-                            MotionEvent.ACTION_POINTER_DOWN -> {
-                                Log.d("TouchTest", "Pointer down at: ${event.x}, ${event.y}")
-                                numberOfPointers = event.pointerCount
-                                true
-                            }
-
-                            MotionEvent.ACTION_MOVE -> {
-                                if (event.pointerCount == 1 && index in gridState!!.indices) {
-                                    viewModel.setGridItemColor(viewModel.getGridItemIndex(cellX, cellY), viewModel.selectedColor.value!!)
-                                    for (i in 0 until event.historySize) {
-                                        val histX = (event.getHistoricalX(i)) / scale
-                                        val histY = (event.getHistoricalY(i)) / scale
-                                        val histCellX = (histX / pixelValue).toInt()
-                                        val histCellY = (histY / pixelValue).toInt()
-                                        val histIndex = histCellY * gridHeight.toInt() + histCellX
-
-                                        if (histIndex in gridState!!.indices) {
-                                            viewModel.setGridItemColor(viewModel.getGridItemIndex(histCellX, histCellY), viewModel.selectedColor.value!!)
-                                        }
-                                    }
-                                }
-                                numberOfPointers = event.pointerCount
-                                Log.d("TouchTest", "Action move at: ${event.x}, ${event.y}")
-                                true
-                            }
-
-                            MotionEvent.ACTION_UP -> {
-                                Log.d("TouchTest", "Action up at: ${event.x}, ${event.y}")
-                                numberOfPointers = event.pointerCount
-                                true
-                            }
-
-                            MotionEvent.ACTION_POINTER_UP -> {
-                                Log.d("TouchTest", "Pointer up at: ${event.x}, ${event.y}")
-                                numberOfPointers = event.pointerCount
-                                true
-                            }
-
-
-                            else -> false
-
-                        }
-
-                    }
-
-            ) {
-                gridState?.forEach { gridItem ->
-                    drawRect(
-                        color = gridItem.getColor(),
-                        topLeft = Offset(gridItem.getXY().first * cellSize, gridItem.getXY().second * cellSize),
-                        size = Size(cellSize.dp.toPx(), cellSize.dp.toPx())
-                    )
-                }
+    Box(modifier = Modifier
+        .wrapContentSize(Alignment.Center)
+        .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.extraSmall)
+    ) {
+        Column {
+            Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text(text = "Grid Width: ${gridWidth.value.toInt()}  ", fontSize = 16.sp)
+                Text(text = "Grid Height: ${gridHeight.value.toInt()}", fontSize = 16.sp)
+            }
+            Row(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                Text(text = "Brush Size: ${viewModel.brushSize.value!!.toInt()}", fontSize = 16.sp)
             }
         }
-        Text(
-            text = "gridSize: $gridWidth x $gridHeight \n cellSize: $cellSize \n scale: ${(scale * 100).toInt()}%",
-            color = Color.Black,
-            modifier = Modifier
+    }
+}
+
+
+
+@Composable
+fun DrawingPixelArtCanvas(bitmap: Bitmap, viewModel: MainViewModel) {
+    val cellSize = viewModel.cellSize.observeAsState(initial = 16f)
+    Canvas(
+        modifier = Modifier
+            .background(Color.Gray)
+            .size(bitmap.width.dp / cellSize.value, bitmap.height.dp / cellSize.value)
+    ) {
+        drawImage(
+            image = bitmap.asImageBitmap().apply {
+                // Initialize the bitmap with a default color or pattern
+            },
+            topLeft = Offset(0f, 0f),
         )
+
+//
+
+
+    }
+}
+
+
+@Composable
+fun PixelArtCanvas(viewModel: MainViewModel) {
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    var rotation by remember { mutableFloatStateOf(0f) }
+    val cellSize = viewModel.cellSize.observeAsState(initial = 16f)
+    val selectedColor by viewModel.selectedColor.observeAsState(initial = Color.Black)
+    val numberOfPointers by viewModel.numberOfPointers.observeAsState(initial = 0)
+    val bitmap = viewModel.bitmap.observeAsState(initial = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)).value
+
+    BoxWithConstraints(contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp)
+            .background(Color.DarkGray, MaterialTheme.shapes.extraSmall)
+    ) {
+
+        Surface(shape = MaterialTheme.shapes.extraSmall, color = Color.DarkGray, modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                translationX = offset.x
+                translationY = offset.y
+                rotationZ = rotation
+            }
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, rotate ->
+                    scale *= zoom
+                    if (numberOfPointers > 1) {
+                        offset += pan
+                        rotation += rotate
+                    }
+                }
+            }
+            .pointerInteropFilter { event ->
+                // Handle touch events to update the bitmap
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        val x =
+                            (((event.x / cellSize.value) / scale).toInt()) // Convert to bitmap coordinates
+                        val y =
+                            (((event.y / cellSize.value) / scale).toInt())// Convert to bitmap coordinates
+                        viewModel.updateCell(
+                            x,
+                            y,
+                            selectedColor.toArgb()
+                        )
+                        viewModel.updateBitmap(bitmap)
+                        viewModel.addPointer()
+                        true
+                    }
+
+                    MotionEvent.ACTION_POINTER_DOWN -> {
+                        viewModel.addPointer()
+                        true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val x =
+                            ((event.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
+                        val y =
+                            ((event.y / cellSize.value) / scale).toInt()// Convert to bitmap coordinates
+                        if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
+                            viewModel.updateCell(
+                                x,
+                                y,
+                                selectedColor.toArgb()
+                            )
+                            viewModel.updateBitmap(bitmap)
+                        }
+                        true
+                    }
+
+                    MotionEvent.ACTION_CANCEL -> {
+                        viewModel.removePointer()
+                        true
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        viewModel.removePointer()
+                        true
+                    }
+
+                    MotionEvent.ACTION_POINTER_UP -> {
+                        viewModel.removePointer()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(
+                        (bitmap.width.dp / cellSize.value),
+                        (bitmap.height.dp / cellSize.value)
+                    )
+                    .background(Color.Gray)
+            ) {
+                DrawingPixelArtCanvas(bitmap = bitmap, viewModel = viewModel)
+                Grid(bitmap = bitmap, viewModel = viewModel)
+            }
+
+        }
+    }
+}
+
+
+
+@Composable
+fun Grid(bitmap: Bitmap, viewModel: MainViewModel) {
+    val cellSize = viewModel.cellSize.observeAsState(initial = 16f)
+    val gridColor by viewModel.gridColor.observeAsState(initial = Color.DarkGray)
+
+    Canvas(
+        modifier = Modifier
+            .size(bitmap.width.dp/cellSize.value, bitmap.height.dp/cellSize.value)
+    ) {
+        for (i in 0 until bitmap.width) {
+            drawLine(
+                color = gridColor,
+                start = Offset((i * cellSize.value), 0f),
+                end = Offset((i * cellSize.value) , bitmap.height.toFloat())
+            )
+        }
+        for (j in 0 until bitmap.height) {
+            drawLine(
+                color = gridColor,
+                start = Offset(0f, ((j * cellSize.value))),
+                end = Offset(bitmap.width.toFloat(), (j * cellSize.value))
+            )
+        }
     }
 }
 
