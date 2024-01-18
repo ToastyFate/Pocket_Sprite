@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -67,11 +68,34 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                         rotation += rotate
                     }
                 }
+                detectDragGestures { change, _ ->
+                    val x =
+                        ((change.position.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
+                    val y =
+                        ((change.position.y / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
+                    if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
+                        val prevX = ((change.previousPosition.x / cellSize.value) / scale).toInt()
+                        val prevY = ((change.previousPosition.y / cellSize.value) / scale).toInt()
+
+                        val interpolatedPoints = viewModel.interpolatePoints(prevX, prevY, x, y)
+
+                        for (point in interpolatedPoints) {
+                            viewModel.updateCell(point.x, point.y, selectedColor)
+                        }
+
+                    }
+
+                    change.consume()
+                    viewModel.getCurrentBitmap()?.let { viewModel.updateBitmap(it) }
+
+                }
+
+
 
             }
             .pointerInteropFilter { event ->
                 // Handle touch events to update the bitmap
-                when (event.action) {
+                when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
                             viewModel.updateCells(event, scale)
@@ -86,23 +110,24 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                         true
                     }
 
-                    MotionEvent.ACTION_MOVE -> {
-                        if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
-                            val x =
-                                ((event.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
-                            val y =
-                                ((event.y / cellSize.value) / scale).toInt()// Convert to bitmap coordinates
-                            if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
-                                viewModel.updateCell(
-                                    x,
-                                    y,
-                                    selectedColor
-                                )
-                                viewModel.updateBitmap(bitmap)
-                            }
-                        }
-                        true
-                    }
+//                    MotionEvent.ACTION_MOVE -> {
+//                        if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
+//                            val x = ((event.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
+//                            val y = ((event.y / cellSize.value) / scale).toInt()// Convert to bitmap coordinates
+//                            if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height && event.historySize > 0) {
+//                                val prevX = ((event.getHistoricalX(0)/ cellSize.value) / scale).toInt()
+//                                val prevY = ((event.getHistoricalY(0)/ cellSize.value) / scale).toInt()
+//                                val interpolatedPoints = viewModel.interpolatePoints(prevX, prevY, x, y)
+//                                for (point in interpolatedPoints) {
+//                                    viewModel.updateCell(point.x, point.y, selectedColor)
+//                                }
+//
+//                            }
+//
+//                        }
+//                        viewModel.updateBitmap(bitmap)
+//                        true
+//                    }
 
                     MotionEvent.ACTION_UP -> {
                         viewModel.setNumberOfPointers(0)
@@ -113,7 +138,6 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                         viewModel.setNumberOfPointers(1)
                         true
                     }
-
 
 
                     else -> false

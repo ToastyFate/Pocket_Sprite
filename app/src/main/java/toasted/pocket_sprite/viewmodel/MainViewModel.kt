@@ -1,6 +1,7 @@
 package toasted.pocket_sprite.viewmodel
 
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.view.MotionEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -13,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import toasted.pocket_sprite.util.DEFAULT_BITMAP_HEIGHT
 import toasted.pocket_sprite.util.DEFAULT_BITMAP_WIDTH
 import toasted.pocket_sprite.util.DEFAULT_CELL_SIZE
+import kotlin.math.abs
 
 class MainViewModel: ViewModel() {
 
@@ -48,6 +50,45 @@ class MainViewModel: ViewModel() {
     val bitmap: MutableLiveData<Bitmap> = _bitmap
     val backgroundBitmap: MutableLiveData<Bitmap> = _backgroundBitmap
 
+    fun interpolatePoints(dx1: Int, dy1: Int, dx2: Int, dy2: Int): List<Point> {
+        val points = mutableListOf<Point>()
+        var x1 = dx1
+        var y1 = dy1
+        var x2 = dx2
+        var y2 = dy2
+        val isSteep = abs(y2 - y1) > abs(x2 - x1)
+        if (isSteep) {
+            var t = x1
+            x1 = y1
+            y1 = t
+            t = x2
+            x2 = y2
+            y2 = t
+        }
+        if (x1 > x2) {
+            var t = x1
+            x1 = x2
+            x2 = t
+            t = y1
+            y1 = y2
+            y2 = t
+        }
+        val dx = x2 - x1
+        val dy = abs(y2 - y1)
+        var error = dx / 2
+        val yStep = if (y1 < y2) 1 else -1
+        var y = y1
+        for (x in x1 until x2 + 1) {
+            points.add(if (isSteep) Point(y, x) else Point(x, y))
+            error -= dy
+            if (error < 0) {
+                y += yStep
+                error += dx
+            }
+        }
+        return points
+    }
+
     fun createDrawingBitmap(density: Density) {
         val gridWidth = gridWidth.value ?: return
         val gridHeight = gridHeight.value ?: return
@@ -79,8 +120,8 @@ class MainViewModel: ViewModel() {
     }
 
     fun updateBitmap(bitmap: Bitmap) {
-       val newBitmap = Bitmap.createBitmap(bitmap)
-       _bitmap.value = newBitmap
+        val newBitmap = Bitmap.createBitmap(bitmap)
+        _bitmap.value = newBitmap
     }
 
     fun updateCell(x: Int, y: Int, color: Color) {
@@ -113,6 +154,10 @@ class MainViewModel: ViewModel() {
             y,
             selectedColor
         )
+    }
+
+    fun getCurrentBitmap(): Bitmap? {
+        return _bitmap.value
     }
 
 //    fun updateCanvasSize(width: Float, height: Float) {
