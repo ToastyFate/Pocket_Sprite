@@ -19,33 +19,27 @@ class BrushTool: ICanvasTool  {
 
     override fun executeTouch(viewModel: MainViewModel, change: PointerInputChange, pointerInput: PointerInputScope) {
         val bitmapManager = viewModel.bmpManager
-        val cellSize = bitmapManager.cellSize.value ?: return
-        val scale = bitmapManager.getCurrentScale()
+        val scale = bitmapManager.scale.value ?: return
         val selectedColor = bitmapManager.selectedColor.value ?: return
         val bitmap = bitmapManager.bitmap.value ?: return
 
         val event = change.position
         val x =
-            ((event.x / cellSize) / scale).toInt() // Convert to bitmap coordinates
+            (event.x / scale).toInt() // Convert to bitmap coordinates
         val y =
-            ((event.y / cellSize) / scale).toInt() // Convert to bitmap coordinates
+            (event.y / scale).toInt() // Convert to bitmap coordinates
         if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
-            val prevX = ((change.previousPosition.x / cellSize) / scale).toInt()
-            val prevY = ((change.previousPosition.y / cellSize) / scale).toInt()
+            val prevX = (change.previousPosition.x / scale).toInt()
+            val prevY = (change.previousPosition.y / scale).toInt()
 
             val interpolatedPoints = interpolatePoints(prevX, prevY, x, y)
 
             for (point in interpolatedPoints) {
                 if (point.x >= 0 && point.x < bitmap.width && point.y >= 0 && point.y < bitmap.height) {
-                    val pointInCell = viewModel.touchHandler.getPointCell(viewModel, point)
-                    if (viewModel.touchHandler.pixelPerfectTouch(
-                            event,
-                            pointInCell.x,
-                            pointInCell.y
-                        )
-                    )
-                        continue
-                    bitmapManager.updateCell(point.x, point.y, selectedColor)
+//                    val pointInCell = viewModel.touchHandler.getPointCell(viewModel, point)
+//                    if (viewModel.touchHandler.pixelPerfectTouch(event, pointInCell.x, pointInCell.y)
+//                    )
+                    bitmapManager.setPixel(point.x, point.y, selectedColor)
                 }
             }
 

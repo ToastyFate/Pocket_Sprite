@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +28,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.unit.dp
+import toasted.pocket_sprite.util.DEFAULT_BITMAP_HEIGHT
+import toasted.pocket_sprite.util.DEFAULT_BITMAP_WIDTH
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -36,20 +37,19 @@ import toasted.pocket_sprite.viewmodel.MainViewModel
 fun PixelArtCanvas(viewModel: MainViewModel) {
     val bitmapManager = viewModel.bmpManager
     val touchHandler = viewModel.touchHandler
-    var fingerDrawEnabled by remember { mutableStateOf(true) }
-    var scale by remember { mutableFloatStateOf(1f) }
+    val fingerDrawEnabled by viewModel.fingerDrawEnabled.observeAsState(initial = true)
     var offset by remember { mutableStateOf(Offset.Zero) }
     var rotation by remember { mutableFloatStateOf(0f) }
-    val cellSize = bitmapManager.cellSize.observeAsState(initial = 16f)
     val selectedColor by bitmapManager.selectedColor.observeAsState(initial = Color.Black)
     val numberOfPointers by viewModel.numberOfPointers.observeAsState(initial = 0)
-    val bitmap = bitmapManager.bitmap.observeAsState(initial = Bitmap.createBitmap(64, 64,
-        Bitmap.Config.ARGB_8888)).value
+    val bitmap = bitmapManager.bitmap.observeAsState(initial = Bitmap.createBitmap(
+        DEFAULT_BITMAP_WIDTH, DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888)).value
     val backgroundBitmap = bitmapManager.backgroundBitmap.observeAsState(initial =
-        Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)).value
+        Bitmap.createBitmap(DEFAULT_BITMAP_WIDTH, DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888)).value
+    val scale = bitmapManager.scale.observeAsState(initial = 1f).value
 
     Log.d("TouchTest", "numberOfPointers: $numberOfPointers")
-    BoxWithConstraints(contentAlignment = Alignment.Center,
+    Box(contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxSize()
             .padding(top = 8.dp)
@@ -68,20 +68,20 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                 if (numberOfPointers > 1) {
                     detectTransformGestures { _, pan, zoom, rotate ->
                         offset = Offset(offset.x + pan.x, offset.y + pan.y)
-                        scale *= zoom
+                        bitmapManager.updateScale(zoom)
                         rotation += rotate
                     }
                 }
 
                 detectDragGestures { change, _ ->
                     if (change.position.x >= 0 && change.position.x < bitmap.width &&
-                        change.position.y >= 0 && change.position.y < bitmap.height) {
+                        change.position.y >= 0 && change.position.y < bitmap.height
+                    ) {
 
                         touchHandler.executeTouch(viewModel, change, this)
                     }
 
                 }
-
 
 
             }
@@ -90,7 +90,11 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
-                            bitmapManager.updateCell(event.x.toInt(), event.y.toInt(), selectedColor)
+                            bitmapManager.setPixel(
+                                event.x.toInt(),
+                                event.y.toInt(),
+                                selectedColor
+                            )
                             bitmapManager.updateBitmap(bitmap)
                         }
                         true
@@ -120,8 +124,8 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
             Box(
                 modifier = Modifier
                     .size(
-                        (bitmap.width.dp / cellSize.value),
-                        (bitmap.height.dp / cellSize.value)
+                        (bitmap.width.dp / scale),
+                        (bitmap.height.dp / scale)
                     )
                     .background(Color.Gray)
             ) {

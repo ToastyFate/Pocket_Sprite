@@ -15,18 +15,19 @@ import toasted.pocket_sprite.viewmodel.MainViewModel
 
 @Composable
 fun DrawingPixelArtCanvas(bitmap: Bitmap, backgroundBitmap: Bitmap, viewModel: MainViewModel) {
-    val cellSize = viewModel.bmpManager.cellSize.observeAsState(initial = 16f)
+    val bitmapManager = viewModel.bmpManager
+    val scale = bitmapManager.scale.observeAsState(initial = 1f)
     val gridEnabled = viewModel.gridEnabled.observeAsState(initial = true)
     val gridColor = viewModel.gridColor.observeAsState(initial = Color.DarkGray)
     Canvas(
         modifier = Modifier
             .background(Color.Gray)
-            .size(bitmap.width.dp / cellSize.value, bitmap.height.dp / cellSize.value)
+            .size(bitmap.width.dp / scale.value, bitmap.height.dp / scale.value)
     ) {
         drawImage(
             image = backgroundBitmap.asImageBitmap().apply {
                 // Initialize the bitmap with a default color or pattern
-
+                this.width
             },
             topLeft = Offset(0f, 0f),
         )
@@ -38,18 +39,18 @@ fun DrawingPixelArtCanvas(bitmap: Bitmap, backgroundBitmap: Bitmap, viewModel: M
             )
 
         if (gridEnabled.value) {
-            for (i in 0 until bitmap.height / cellSize.value.toInt()) {
+            for (i in 0 until bitmap.height / scale.value.toInt()) {
                 drawLine(
                     gridColor.value,
-                    Offset(0f, (i * cellSize.value.toInt()).toFloat()),
-                    Offset(bitmap.width.toFloat(), (i * cellSize.value.toInt()).toFloat())
+                    Offset(0f, (i * scale.value)),
+                    Offset(bitmap.width.toFloat(), (i * scale.value))
                 )
             }
-            for (j in 0 until bitmap.width / cellSize.value.toInt()) {
+            for (j in 0 until bitmap.width / scale.value.toInt()) {
                 drawLine(
                     gridColor.value,
-                    Offset((j * cellSize.value.toInt().toFloat()), 0f),
-                    Offset((j * cellSize.value.toInt()).toFloat(), bitmap.height.toFloat())
+                    Offset((j * scale.value), 0f),
+                    Offset((j * scale.value), bitmap.height.toFloat())
                 )
             }
         }

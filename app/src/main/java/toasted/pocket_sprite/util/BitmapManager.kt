@@ -1,7 +1,6 @@
 package toasted.pocket_sprite.util
 
 import android.graphics.Bitmap
-import android.view.MotionEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
@@ -14,23 +13,30 @@ class BitmapManager() {
 
     private val _gridWidth = MutableLiveData(DEFAULT_BITMAP_WIDTH.dp)
     private val _gridHeight = MutableLiveData(DEFAULT_BITMAP_HEIGHT.dp)
-    private val _scaleWidth = MutableLiveData(1f)
-    private val _scaleHeight = MutableLiveData(1f)
-    private val _cellSize = MutableLiveData(DEFAULT_CELL_SIZE)
+    private val _scale = MutableLiveData(1f)
+    private val _scaleWidth = MutableLiveData(DEFAULT_BITMAP_WIDTH)
+    private val _scaleHeight = MutableLiveData(DEFAULT_BITMAP_HEIGHT)
     private val _selectedColor = MutableLiveData(Color.Black)
-    private val _bitmap = MutableLiveData(Bitmap.createBitmap(DEFAULT_BITMAP_WIDTH,
-        DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888))
-    private val _backgroundBitmap = MutableLiveData(Bitmap.createBitmap(DEFAULT_BITMAP_WIDTH,
-        DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888))
+    private val _bitmap = MutableLiveData(
+        Bitmap.createBitmap(
+            DEFAULT_BITMAP_WIDTH,
+            DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888
+        )
+    )
+    private val _backgroundBitmap = MutableLiveData(
+        Bitmap.createBitmap(
+            DEFAULT_BITMAP_WIDTH,
+            DEFAULT_BITMAP_HEIGHT, Bitmap.Config.ARGB_8888
+        )
+    )
     val gridWidth: LiveData<Dp> = _gridWidth
     val gridHeight: LiveData<Dp> = _gridHeight
-    val scaleWidth: LiveData<Float> = _scaleWidth
-    val scaleHeight: LiveData<Float> = _scaleHeight
-    val cellSize: LiveData<Float> = _cellSize
+    val scale: LiveData<Float> = _scale
+    val scaleWidth: LiveData<Int> = _scaleWidth
+    val scaleHeight: LiveData<Int> = _scaleHeight
     val selectedColor: LiveData<Color> = _selectedColor
     val bitmap: LiveData<Bitmap> = _bitmap
     val backgroundBitmap: LiveData<Bitmap> = _backgroundBitmap
-
 
 
     /**
@@ -41,11 +47,13 @@ class BitmapManager() {
     fun createDrawingBitmap(density: Density) {
         val gridWidth = gridWidth.value ?: return
         val gridHeight = gridHeight.value ?: return
-        val cellSize = cellSize.value ?: return
+        val scale = scale.value ?: return
         val width = with(density) { gridWidth.toPx() }
         val height = with(density) { gridHeight.toPx() }
-        val bmp = Bitmap.createBitmap(width.toInt() * cellSize.toInt() ,
-            height.toInt() * cellSize.toInt(), Bitmap.Config.ARGB_8888)
+        val bmp = Bitmap.createBitmap(
+            width.toInt() * scale.toInt(),
+            height.toInt() * scale.toInt(), Bitmap.Config.ARGB_8888
+        )
         for (i in 0 until bmp.width) {
             for (j in 0 until bmp.height) {
                 bmp.setPixel(i, j, Color.Transparent.toArgb())
@@ -63,11 +71,13 @@ class BitmapManager() {
     fun createBackgroundBitmap(density: Density) {
         val gridWidth = gridWidth.value ?: return
         val gridHeight = gridHeight.value ?: return
-        val cellSize = cellSize.value ?: return
+        val scale = scale.value ?: return
         val width = with(density) { gridWidth.toPx() }
         val height = with(density) { gridHeight.toPx() }
-        val bmp = Bitmap.createBitmap(width.toInt() * cellSize.toInt() ,
-            height.toInt() * cellSize.toInt(), Bitmap.Config.ARGB_8888)
+        val bmp = Bitmap.createBitmap(
+            width.toInt() * scale.toInt(),
+            height.toInt() * scale.toInt(), Bitmap.Config.ARGB_8888
+        )
         // Initialize the bitmap with a default color or pattern
         createGridCheckerPattern(bmp)
         _bitmap.value = bmp
@@ -92,51 +102,76 @@ class BitmapManager() {
         _bitmap.value = newBitmap
     }
 
-    /**
-     * Update cell
-     *
-     * @param x
-     * @param y
-     * @param color
-     */
-    fun updateCell(x: Int, y: Int, color: Color) {
+    fun scaleBitmap(bitmap: Bitmap) {
+        val scale = scale.value ?: return
+        bitmap.reconfigure(
+            (bitmap.width * scale).toInt(),
+            (bitmap.height * scale).toInt(),
+            Bitmap.Config.ARGB_8888
+        )
+    }
+
+    fun setPixel(x: Int, y: Int, color: Color) {
         _bitmap.value?.let { bitmap ->
-            val cellSize = cellSize.value?.toInt() ?: return
-            val startX = x * cellSize
-            val startY = y * cellSize
-            for (i in startX until startX + cellSize) {
-                for (j in startY until startY + cellSize) {
+            val scale = scale.value ?: return
+            val startX = (x * scale).toInt()
+            val startY = (y * scale).toInt()
+            for (i in startX until startX + scale.toInt()) {
+                for (j in startY until startY + scale.toInt()) {
                     if (i < bitmap.width && j < bitmap.height) {
                         bitmap.setPixel(i, j, color.toArgb())
                     }
                 }
             }
-
-            // Trigger an update to notify observers, if necessary
             _bitmap.value = bitmap
         }
     }
 
+//    /**
+//     * Update cell
+//     *
+//     * @param x
+//     * @param y
+//     * @param color
+//     */
+//    fun updateCell(x: Int, y: Int, color: Color) {
+//        _bitmap.value?.let { bitmap ->
+//            val scale = scale.value ?: return
+//            val startX = x * scale
+//            val startY = y * scale
+//            for (i in startX until startX + cellSize) {
+//                for (j in startY until startY + cellSize) {
+//                    if (i < bitmap.width && j < bitmap.height) {
+//                        bitmap.setPixel(i, j, color.toArgb())
+//                    }
+//                }
+//            }
+//
+//            // Trigger an update to notify observers, if necessary
+//            _bitmap.value = bitmap
+//        }
+//    }
 
-    /**
-     * Update cells
-     *
-     * @param event
-     * @param scale
-     */
-    fun updateCells(event: MotionEvent, scale: Float) {
-        val cellSize = cellSize.value ?: return
-        val selectedColor = selectedColor.value ?: return
-        val x =
-            (((event.x / cellSize) / scale).toInt()) // Convert to bitmap coordinates
-        val y =
-            (((event.y / cellSize) / scale).toInt())// Convert to bitmap coordinates
-        updateCell(
-            x,
-            y,
-            selectedColor
-        )
-    }
+
+//    /**
+//     * Update cells
+//     *
+//     * @param event
+//     * @param scale
+//     */
+//    fun updateCells(event: MotionEvent, scale: Float) {
+//        val cellSize = cellSize.value ?: return
+//        val selectedColor = selectedColor.value ?: return
+//        val x =
+//            (((event.x / cellSize) / scale).toInt()) // Convert to bitmap coordinates
+//        val y =
+//            (((event.y / cellSize) / scale).toInt())// Convert to bitmap coordinates
+//        updateCell(
+//            x,
+//            y,
+//            selectedColor
+//        )
+//    }
 
     /**
      * Update background bitmap size
@@ -145,16 +180,26 @@ class BitmapManager() {
      * @param height
      */
     private fun updateBackgroundBitmapSize(width: Float, height: Float) {
-        val cellSize = cellSize.value ?: return
         val currentBitmap = saveCurrentPixels()
+        val scale = scale.value ?: return
         _backgroundBitmap.value?.apply {
-            val bmp = Bitmap.createBitmap(width.toInt() * cellSize.toInt() ,
-                height.toInt() * cellSize.toInt(), Bitmap.Config.ARGB_8888)
+            val bmp = Bitmap.createBitmap(
+                width.toInt() * scale.toInt(),
+                height.toInt() * scale.toInt(), Bitmap.Config.ARGB_8888
+            )
             // Initialize the bitmap with a default color or pattern
             createGridCheckerPattern(bmp)
             _backgroundBitmap.value = bmp
         }
         loadPixels(currentBitmap)
+    }
+
+    private fun reconfigureBitmaps() {
+        val scaleWidth = scaleWidth.value ?: return
+        val scaleHeight = scaleHeight.value ?: return
+        val config = Bitmap.Config.ARGB_8888
+        _bitmap.value?.reconfigure(scaleWidth, scaleHeight, config)
+        _backgroundBitmap.value?.reconfigure(scaleWidth, scaleHeight, config)
     }
 
     /**
@@ -164,12 +209,14 @@ class BitmapManager() {
      * @param height
      */
     fun updateCanvasSize(width: Float, height: Float) {
-        val cellSize = cellSize.value ?: return
+        val scale = scale.value ?: return
         updateBackgroundBitmapSize(width, height)
         val currentBitmap = saveCurrentPixels()
         _bitmap.value?.apply {
-            val bmp = Bitmap.createBitmap(width.toInt() * cellSize.toInt() ,
-                height.toInt() * cellSize.toInt(), Bitmap.Config.ARGB_8888)
+            val bmp = Bitmap.createBitmap(
+                width.toInt() * scale.toInt(),
+                height.toInt() * scale.toInt(), Bitmap.Config.ARGB_8888
+            )
             // Initialize the bitmap with a default color or pattern
             _bitmap.value = bmp
         }
@@ -184,11 +231,11 @@ class BitmapManager() {
      */
     private fun saveCurrentPixels(): String {
         val bitmap = bitmap.value ?: return ""
-        val cellSize = cellSize.value ?: return ""
+        val scale = scale.value ?: return ""
         val stringBuilder = StringBuilder()
-        for (i in 0 until bitmap.width / cellSize.toInt()) {
-            for (j in 0 until bitmap.height / cellSize.toInt()) {
-                val color = bitmap.getPixel(i * cellSize.toInt(), j * cellSize.toInt())
+        for (i in 0 until bitmap.width / scale.toInt()) {
+            for (j in 0 until bitmap.height / scale.toInt()) {
+                val color = bitmap.getPixel(i * scale.toInt(), j * scale.toInt())
                 stringBuilder.append(String.format("#%06X", 0xFFFFFF and color))
                 stringBuilder.append(" ")
             }
@@ -210,7 +257,7 @@ class BitmapManager() {
             val colors = line.split(" ")
             for (j in colors.indices) {
                 val color = Color(android.graphics.Color.parseColor(colors[j]))
-                updateCell(i, j, color)
+                setPixel(i, j, color)
             }
         }
         _bitmap.value = bitmap
@@ -222,28 +269,30 @@ class BitmapManager() {
      * @param bitmap
      */
     private fun createGridCheckerPattern(bitmap: Bitmap) {
-        val cellSize = cellSize.value ?: return
-        for (i in 0 until bitmap.width / (cellSize.toInt() * 18)) {
-            for (j in 0 until bitmap.height / (cellSize.toInt() * 18)) {
-                for (k in 0 until cellSize.toInt() * 8) {
-                    for (l in 0 until cellSize.toInt() * 8) {
-                        bitmap.setPixel(i * cellSize.toInt() * 16 + k, j * cellSize.toInt() * 16 + l, Color.LightGray.toArgb())
+        val scale = scale.value ?: return
+        for (i in 0 until bitmap.width / (scale.toInt() * 18)) {
+            for (j in 0 until bitmap.height / (scale.toInt() * 18)) {
+                for (k in 0 until scale.toInt() * 8) {
+                    for (l in 0 until scale.toInt() * 8) {
+                        bitmap.setPixel(
+                            i * scale.toInt() * 16 + k,
+                            j * scale.toInt() * 16 + l,
+                            Color.LightGray.toArgb()
+                        )
                     }
                 }
-                for (k in cellSize.toInt() * 8 until cellSize.toInt() * 16) {
-                    for (l in cellSize.toInt() * 8 until cellSize.toInt() * 16) {
-                        bitmap.setPixel(i * cellSize.toInt() * 16 + k, j * cellSize.toInt() * 16 + l, Color.LightGray.toArgb())
+                for (k in scale.toInt() * 8 until scale.toInt() * 16) {
+                    for (l in scale.toInt() * 8 until scale.toInt() * 16) {
+                        bitmap.setPixel(
+                            i * scale.toInt() * 16 + k,
+                            j * scale.toInt() * 16 + l,
+                            Color.LightGray.toArgb()
+                        )
                     }
                 }
             }
         }
         _backgroundBitmap.value = bitmap
-    }
-
-    fun getCurrentScale(): Float {
-        val scaleWidth = scaleWidth.value ?: return 1f
-        val scaleHeight = scaleHeight.value ?: return 1f
-        return scaleWidth * scaleHeight
     }
 
     /**
@@ -256,11 +305,17 @@ class BitmapManager() {
     }
 
     /**
-     * Set cell size
+     * Update scale
      *
-     * @param size
+     * @param zoom
      */
-    fun setCellSize(size: Float) {
-        _cellSize.value = size
+    fun updateScale(zoom: Float) {
+        val bitmap = bitmap.value ?: return
+        val scale = scale.value ?: return
+        val newScale = scale * zoom
+        _scale.value = newScale
+        _scaleWidth.value = (newScale * bitmap.width).toInt()
+        _scaleHeight.value = (newScale * bitmap.height).toInt()
+        reconfigureBitmaps()
     }
 }
