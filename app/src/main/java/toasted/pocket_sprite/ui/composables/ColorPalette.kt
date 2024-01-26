@@ -58,8 +58,7 @@ fun ColorPalette(viewModel: MainViewModel) {
                             .pointerInteropFilter { event ->
                                 when (event.action) {
                                     MotionEvent.ACTION_DOWN -> {
-                                        viewModel.selectedColor.value = colors[i + (j * 6)]
-                                        //                                Log.d("TouchTest", "Color selected: ${colorList!![i]}")
+                                        viewModel.bmpManager.setSelectedColor(colors[i + (j * 6)])
                                         true
                                     }
 

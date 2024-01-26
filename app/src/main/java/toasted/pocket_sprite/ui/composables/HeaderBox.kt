@@ -25,7 +25,7 @@ fun HeaderBox(viewModel: MainViewModel) {
     ) {
 
         FilledTonalIconToggleButton( checked = false,
-            onCheckedChange = { viewModel.DisplaySettingsMenu() }
+            onCheckedChange = { viewModel.displaySettingsMenu() }
         ) {
             Icon(
                 imageVector = Icons.Default.Settings,

@@ -34,15 +34,19 @@ import toasted.pocket_sprite.viewmodel.MainViewModel
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PixelArtCanvas(viewModel: MainViewModel) {
+    val bitmapManager = viewModel.bmpManager
+    val touchHandler = viewModel.touchHandler
     var fingerDrawEnabled by remember { mutableStateOf(true) }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     var rotation by remember { mutableFloatStateOf(0f) }
-    val cellSize = viewModel.cellSize.observeAsState(initial = 16f)
-    val selectedColor by viewModel.selectedColor.observeAsState(initial = Color.Black)
+    val cellSize = bitmapManager.cellSize.observeAsState(initial = 16f)
+    val selectedColor by bitmapManager.selectedColor.observeAsState(initial = Color.Black)
     val numberOfPointers by viewModel.numberOfPointers.observeAsState(initial = 0)
-    val bitmap = viewModel.bitmap.observeAsState(initial = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)).value
-    val backgroundBitmap = viewModel.backgroundBitmap.observeAsState(initial = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)).value
+    val bitmap = bitmapManager.bitmap.observeAsState(initial = Bitmap.createBitmap(64, 64,
+        Bitmap.Config.ARGB_8888)).value
+    val backgroundBitmap = bitmapManager.backgroundBitmap.observeAsState(initial =
+        Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888)).value
 
     Log.d("TouchTest", "numberOfPointers: $numberOfPointers")
     BoxWithConstraints(contentAlignment = Alignment.Center,
@@ -68,25 +72,13 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                         rotation += rotate
                     }
                 }
+
                 detectDragGestures { change, _ ->
-                    val x =
-                        ((change.position.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
-                    val y =
-                        ((change.position.y / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
-                    if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
-                        val prevX = ((change.previousPosition.x / cellSize.value) / scale).toInt()
-                        val prevY = ((change.previousPosition.y / cellSize.value) / scale).toInt()
+                    if (change.position.x >= 0 && change.position.x < bitmap.width &&
+                        change.position.y >= 0 && change.position.y < bitmap.height) {
 
-                        val interpolatedPoints = viewModel.interpolatePoints(prevX, prevY, x, y)
-
-                        for (point in interpolatedPoints) {
-                            viewModel.updateCell(point.x, point.y, selectedColor)
-                        }
-
+                        touchHandler.executeTouch(viewModel, change, this)
                     }
-
-                    change.consume()
-                    viewModel.getCurrentBitmap()?.let { viewModel.updateBitmap(it) }
 
                 }
 
@@ -98,8 +90,8 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
                         if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
-                            viewModel.updateCells(event, scale)
-                            viewModel.updateBitmap(bitmap)
+                            bitmapManager.updateCell(event.x.toInt(), event.y.toInt(), selectedColor)
+                            bitmapManager.updateBitmap(bitmap)
                         }
                         true
                     }
@@ -109,25 +101,6 @@ fun PixelArtCanvas(viewModel: MainViewModel) {
                         Log.d("TouchTest", "pointer down")
                         true
                     }
-
-//                    MotionEvent.ACTION_MOVE -> {
-//                        if (fingerDrawEnabled && viewModel.getPointerType(event) == "Finger") {
-//                            val x = ((event.x / cellSize.value) / scale).toInt() // Convert to bitmap coordinates
-//                            val y = ((event.y / cellSize.value) / scale).toInt()// Convert to bitmap coordinates
-//                            if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height && event.historySize > 0) {
-//                                val prevX = ((event.getHistoricalX(0)/ cellSize.value) / scale).toInt()
-//                                val prevY = ((event.getHistoricalY(0)/ cellSize.value) / scale).toInt()
-//                                val interpolatedPoints = viewModel.interpolatePoints(prevX, prevY, x, y)
-//                                for (point in interpolatedPoints) {
-//                                    viewModel.updateCell(point.x, point.y, selectedColor)
-//                                }
-//
-//                            }
-//
-//                        }
-//                        viewModel.updateBitmap(bitmap)
-//                        true
-//                    }
 
                     MotionEvent.ACTION_UP -> {
                         viewModel.setNumberOfPointers(0)

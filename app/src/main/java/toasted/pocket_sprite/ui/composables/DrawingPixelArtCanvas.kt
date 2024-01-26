@@ -15,7 +15,7 @@ import toasted.pocket_sprite.viewmodel.MainViewModel
 
 @Composable
 fun DrawingPixelArtCanvas(bitmap: Bitmap, backgroundBitmap: Bitmap, viewModel: MainViewModel) {
-    val cellSize = viewModel.cellSize.observeAsState(initial = 16f)
+    val cellSize = viewModel.bmpManager.cellSize.observeAsState(initial = 16f)
     val gridEnabled = viewModel.gridEnabled.observeAsState(initial = true)
     val gridColor = viewModel.gridColor.observeAsState(initial = Color.DarkGray)
     Canvas(

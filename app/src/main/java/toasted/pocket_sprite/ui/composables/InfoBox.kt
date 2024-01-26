@@ -18,8 +18,8 @@ import toasted.pocket_sprite.viewmodel.MainViewModel
 
 @Composable
 fun InfoBox(viewModel: MainViewModel) {
-    val gridWidth by viewModel.gridWidth.observeAsState(initial = 64.dp)
-    val gridHeight by viewModel.gridHeight.observeAsState(initial = 64.dp)
+    val gridWidth by viewModel.bmpManager.gridWidth.observeAsState(initial = 64.dp)
+    val gridHeight by viewModel.bmpManager.gridHeight.observeAsState(initial = 64.dp)
 
     Box(modifier = Modifier
         .wrapContentSize(Alignment.Center)

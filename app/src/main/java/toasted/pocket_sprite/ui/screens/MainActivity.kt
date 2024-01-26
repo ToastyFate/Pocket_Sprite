@@ -17,8 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import toasted.pocket_sprite.ui.composables.ColorPalette
-import toasted.pocket_sprite.ui.composables.InfoBox
+import toasted.pocket_sprite.ui.composables.HeaderBox
 import toasted.pocket_sprite.ui.composables.PixelArtCanvas
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
 import toasted.pocket_sprite.viewmodel.MainViewModel
@@ -49,8 +48,9 @@ fun PixelArtAppPreview(){
 
 @Composable
 fun PixelArtApp(viewModel: MainViewModel) {
-    viewModel.createBackgroundBitmap(LocalDensity.current)
-    viewModel.createDrawingBitmap(LocalDensity.current)
+
+    viewModel.bmpManager.createBackgroundBitmap(LocalDensity.current)
+    viewModel.bmpManager.createDrawingBitmap(LocalDensity.current)
 
 
     Surface(color = MaterialTheme.colorScheme.primary, modifier = Modifier
@@ -62,9 +62,7 @@ fun PixelArtApp(viewModel: MainViewModel) {
             modifier = Modifier
         ) {
 
-            ColorPalette(viewModel)
-
-            InfoBox(viewModel)
+            HeaderBox(viewModel)
 
             PixelArtCanvas(viewModel)
 
