@@ -1,45 +1,48 @@
 package toasted.pocket_sprite.util
 
-import androidx.compose.ui.geometry.Offset
+import android.graphics.Point
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.unit.Density
+import androidx.lifecycle.MutableLiveData
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
 class TouchInputHandler {
 
-    data class Point(val x: Float, val y: Float)
+    private val _pixelPerfectEnabled = MutableLiveData(false)
+    val pixelPerfectEnabled = _pixelPerfectEnabled
 
-    fun executeTouch(viewModel: MainViewModel,change: PointerInputChange, pointerInput: PointerInputScope) {
+    fun executeTouch(viewModel: MainViewModel,change: PointerInputChange, pointerInput: PointerInputScope, density: Density) {
         val currentTool = viewModel.toolMgr.currentTool.value ?: return
-        currentTool.executeTouch(viewModel, change, pointerInput)
+        currentTool.executeTouch(viewModel, change, pointerInput, density)
     }
 
-    fun pixelPerfectTouch(offset: Offset, cellX: Float, cellY: Float): Boolean {
-        val point = Point(offset.x, offset.y)
+    fun pixelPerfectTouch(coordinate: Coordinate, cellX: Int, cellY: Int, gridCellSize: Int): Boolean {
+        val point = Point(coordinate.x, coordinate.y)
 
         // Define triangles based on the cellX and cellY
         val topLeftTriangle = arrayOf(
             Point(cellX, cellY),
-            Point(cellX + 10, cellY),
-            Point(cellX, cellY + 10)
+            Point(cellX + 8, cellY),
+            Point(cellX, cellY + 8)
         )
 
         val topRightTriangle = arrayOf(
-            Point(cellX + 16, cellY),
-            Point(cellX + 10, cellY),
-            Point(cellX + 16, cellY + 10)
+            Point(cellX + gridCellSize, cellY),
+            Point(cellX + 8, cellY),
+            Point(cellX + gridCellSize, cellY + 8)
         )
 
         val bottomLeftTriangle = arrayOf(
-            Point(cellX, cellY + 16),
-            Point(cellX, cellY + 10),
-            Point(cellX + 10, cellY + 16)
+            Point(cellX, cellY + gridCellSize),
+            Point(cellX, cellY + 8),
+            Point(cellX + 8, cellY + gridCellSize)
         )
 
         val bottomRightTriangle = arrayOf(
-            Point(cellX + 16, cellY + 16),
-            Point(cellX + 16, cellY + 10),
-            Point(cellX + 10, cellY + 16)
+            Point(cellX + gridCellSize, cellY + gridCellSize),
+            Point(cellX + gridCellSize, cellY + 8),
+            Point(cellX + 8, cellY + gridCellSize)
         )
 
         // Define other triangles similarly...
@@ -51,11 +54,15 @@ class TouchInputHandler {
                 || isPointInTriangle(point, bottomRightTriangle[0], bottomRightTriangle[1], bottomRightTriangle[2])
     }
 
-    fun getPointCell(viewModel: MainViewModel, point: android.graphics.Point): Point {
-        val cellSize = viewModel.bmpManager.cellSize.value ?: return Point(0f, 0f)
-        val cellX = (point.x / cellSize).toInt()
-        val cellY = (point.y / cellSize).toInt()
-        return Point(cellX.toFloat(), cellY.toFloat())
+    fun getPointCell(gridCellSize: Int, coordinate: Coordinate): Coordinate {
+        val cellX = (coordinate.x / gridCellSize)
+        val cellY = (coordinate.y / gridCellSize)
+        return Coordinate(cellX, cellY)
+    }
+
+    fun togglePixelPerfect() {
+        val pixelPerfectValue = _pixelPerfectEnabled.value ?: false
+        _pixelPerfectEnabled.value = !pixelPerfectValue
     }
 
 

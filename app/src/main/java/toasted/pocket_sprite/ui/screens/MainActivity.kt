@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalComposeUiApi::class)
-
 package toasted.pocket_sprite.ui.screens
 
 import android.os.Bundle
@@ -12,13 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import toasted.pocket_sprite.ui.composables.HeaderBox
-import toasted.pocket_sprite.ui.composables.PixelArtCanvas
+import toasted.pocket_sprite.ui.composables.PixelArtSurface
 import toasted.pocket_sprite.ui.theme.Pocket_SpriteTheme
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
@@ -48,8 +45,6 @@ fun PixelArtAppPreview(){
 
 @Composable
 fun PixelArtApp(viewModel: MainViewModel) {
-
-    viewModel.bmpManager.createBackgroundBitmap(LocalDensity.current)
     viewModel.bmpManager.createDrawingBitmap(LocalDensity.current)
 
 
@@ -64,7 +59,7 @@ fun PixelArtApp(viewModel: MainViewModel) {
 
             HeaderBox(viewModel)
 
-            PixelArtCanvas(viewModel)
+            PixelArtSurface(viewModel)
 
         }
     }

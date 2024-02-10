@@ -1,13 +1,19 @@
 package toasted.pocket_sprite.viewmodel
 
+import android.util.Size
 import android.view.MotionEvent
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import toasted.pocket_sprite.util.BitmapManager
+import toasted.pocket_sprite.util.DEFAULT_CANVAS_HEIGHT
+import toasted.pocket_sprite.util.DEFAULT_CANVAS_WIDTH
+import toasted.pocket_sprite.util.DEFAULT_SCALE_FACTOR
+import toasted.pocket_sprite.util.GridManager
 import toasted.pocket_sprite.util.ToolManager
 import toasted.pocket_sprite.util.TouchInputHandler
+
 
 /**
  * Main view model
@@ -16,29 +22,36 @@ import toasted.pocket_sprite.util.TouchInputHandler
  */
 class MainViewModel: ViewModel() {
 
+
     private val bitmapManager = BitmapManager()
     private val touchInputHandler = TouchInputHandler()
     private val toolManager = ToolManager()
-    private val _fileContent = MutableLiveData<String>()
+    private val gridManager = GridManager()
+    private val _scaleFactor = MutableLiveData(DEFAULT_SCALE_FACTOR)
+    private val _canvasSize = MutableLiveData(Size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT))
+    private val _canvasWidth = MutableLiveData(DEFAULT_CANVAS_WIDTH)
+    private val _canvasHeight = MutableLiveData(DEFAULT_CANVAS_WIDTH)
     private val _numberOfPointers = MutableLiveData(0)
     private val _fingerDrawEnabled = MutableLiveData(true)
-    private val _gridEnabled = MutableLiveData(true)
     private val _colorPickerEnabled = MutableLiveData(false)
+    private val _selectedColor = MutableLiveData(Color.Black)
     private val _brushSize = MutableLiveData(1)
-    private val _gridColor = MutableLiveData(Color.DarkGray)
     private val _colorList = MutableLiveData(listOf(Color.Black, Color.White, Color.Red, Color.Blue,
         Color.Green, Color.Yellow, Color.Magenta, Color.Cyan))
-//    val fileContent: LiveData<String> = _fileContent
+    val scaleFactor: LiveData<Float> = _scaleFactor
+    val canvasSize: LiveData<Size> = _canvasSize
+    val canvasWidth: LiveData<Int> = _canvasWidth
+    val canvasHeight: LiveData<Int> = _canvasHeight
     val numberOfPointers: LiveData<Int> = _numberOfPointers
     val fingerDrawEnabled: LiveData<Boolean> = _fingerDrawEnabled
-    val gridEnabled: LiveData<Boolean> = _gridEnabled
     val brushSize: LiveData<Int> = _brushSize
-    val gridColor: LiveData<Color> = _gridColor
     val colorList: LiveData<List<Color>> = _colorList
     val colorPickerEnabled: LiveData<Boolean> = _colorPickerEnabled
+    val selectedColor: LiveData<Color> = _selectedColor
     val bmpManager = bitmapManager
     val touchHandler = touchInputHandler
     val toolMgr = toolManager
+    val gridMgr = gridManager
 
     /**
      * Set number of pointers
@@ -49,25 +62,7 @@ class MainViewModel: ViewModel() {
         _numberOfPointers.value = value
     }
 
-    /**
-     * Set grid color
-     *
-     * @param color
-     */
-    fun setGridColor(color: Color) {
-        _gridColor.value = color
-    }
 
-
-
-    /**
-     * Set file content
-     *
-     * @param content
-     */
-    fun setFileContent(content: String) {
-        _fileContent.value = content
-    }
 
     /**
      * Get pointer type
@@ -84,13 +79,7 @@ class MainViewModel: ViewModel() {
         }
     }
 
-    /**
-     * Toggle grid enabled
-     *
-     */
-    fun toggleGridEnabled() {
-        _gridEnabled.value = !_gridEnabled.value!!
-    }
+
 
     /**
      * Toggle color picker
@@ -107,13 +96,21 @@ class MainViewModel: ViewModel() {
      * @param colorPickerType
      */
     fun chooseColor(color: Color, colorPickerType: String) {
-        val selectedColor = bitmapManager.selectedColor
         if (colorPickerType == "Grid") {
-            _gridColor.value = color
+            gridManager.setGridColor(color)
             toggleColorPicker()
         } else {
-            bitmapManager.setSelectedColor(color)
+            setSelectedColor(color)
         }
+    }
+
+    /**
+     * Set selected color
+     *
+     * @param color
+     */
+    fun setSelectedColor(color: Color) {
+        _selectedColor.value = color
     }
 
     /**
@@ -122,6 +119,11 @@ class MainViewModel: ViewModel() {
      */
     fun toggleFingerDrawEnabled() {
         _fingerDrawEnabled.value = !_fingerDrawEnabled.value!!
+    }
+
+    fun setScaleFactor(zoom: Float) {
+        val value = _scaleFactor.value ?: return
+        _scaleFactor.value = value * zoom
     }
 
     /**

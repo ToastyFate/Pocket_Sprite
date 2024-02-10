@@ -1,6 +1,7 @@
 package toasted.pocket_sprite.ui.composables
 
 import android.graphics.Bitmap
+import android.util.Size
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
@@ -11,47 +12,28 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
+import toasted.pocket_sprite.util.DEFAULT_CANVAS_HEIGHT
+import toasted.pocket_sprite.util.DEFAULT_CANVAS_WIDTH
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
-@Composable
-fun DrawingPixelArtCanvas(bitmap: Bitmap, backgroundBitmap: Bitmap, viewModel: MainViewModel) {
-    val cellSize = viewModel.bmpManager.cellSize.observeAsState(initial = 16f)
-    val gridEnabled = viewModel.gridEnabled.observeAsState(initial = true)
-    val gridColor = viewModel.gridColor.observeAsState(initial = Color.DarkGray)
-    Canvas(
-        modifier = Modifier
-            .background(Color.Gray)
-            .size(bitmap.width.dp / cellSize.value, bitmap.height.dp / cellSize.value)
-    ) {
-        drawImage(
-            image = backgroundBitmap.asImageBitmap().apply {
-                // Initialize the bitmap with a default color or pattern
 
-            },
-            topLeft = Offset(0f, 0f),
-        )
+@Composable
+fun DrawingPixelArtCanvas(bitmap: Bitmap, viewModel: MainViewModel) {
+    val scale = viewModel.scaleFactor.observeAsState(initial = 1f)
+    val canvasSize = viewModel.canvasSize.observeAsState(initial = Size(DEFAULT_CANVAS_WIDTH, DEFAULT_CANVAS_HEIGHT))
+
+    Canvas(modifier = Modifier
+        .background(Color.Gray)
+        .size(canvasSize.value.width.dp * scale.value, canvasSize.value.height.dp * scale.value)
+
+    ) {
+        viewModel.gridMgr.createGrid(canvas = this, scale = scale.value)
         drawImage(
                 image = bitmap.asImageBitmap().apply {
                     // Initialize the bitmap with a default color or pattern
+
                 },
                 topLeft = Offset(0f, 0f),
             )
-
-        if (gridEnabled.value) {
-            for (i in 0 until bitmap.height / cellSize.value.toInt()) {
-                drawLine(
-                    gridColor.value,
-                    Offset(0f, (i * cellSize.value.toInt()).toFloat()),
-                    Offset(bitmap.width.toFloat(), (i * cellSize.value.toInt()).toFloat())
-                )
-            }
-            for (j in 0 until bitmap.width / cellSize.value.toInt()) {
-                drawLine(
-                    gridColor.value,
-                    Offset((j * cellSize.value.toInt().toFloat()), 0f),
-                    Offset((j * cellSize.value.toInt()).toFloat(), bitmap.height.toFloat())
-                )
-            }
-        }
     }
 }

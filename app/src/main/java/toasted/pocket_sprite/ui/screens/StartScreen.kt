@@ -89,12 +89,12 @@ fun StartScreen(projectDir: File, viewModel: StartViewModel) {
                 DropdownMenu(expanded = showOpenProjectDialog, onDismissRequest = {
                     viewModel.setShowOpenProjectDialog(false)}, modifier = Modifier
                     .background(Color.White)
-                    .size(350.dp, 200.dp), offset = DpOffset(-10.dp, 10.dp)
+                    .size(350.dp, 200.dp), offset = DpOffset((-10).dp, 10.dp)
                 ) {
                     projectList.forEach {
                         DropdownMenuItem(text = {Text(it)}, onClick =
                         { viewModel.setShowOpenProjectDialog(false); viewModel.setShowMenu(false)
-                            ; drawCanvas = true; projectFile = File(projectDir, it) })
+                            drawCanvas = true; projectFile = File(projectDir, it) })
                     }
                 }
             }

@@ -3,8 +3,6 @@ package toasted.pocket_sprite.util
 import android.graphics.Point
 import kotlin.math.abs
 
-data class Point(val x: Float, val y: Float)
-
 fun interpolatePoints(dx1: Int, dy1: Int, dx2: Int, dy2: Int): List<Point> {
     val points = mutableListOf<Point>()
     var x1 = dx1
@@ -45,7 +43,7 @@ fun interpolatePoints(dx1: Int, dy1: Int, dx2: Int, dy2: Int): List<Point> {
 
 }
 
-fun isPointInTriangle(p: TouchInputHandler.Point, a: TouchInputHandler.Point, b: TouchInputHandler.Point, c: TouchInputHandler.Point): Boolean {
+fun isPointInTriangle(p: Point, a: Point, b: Point, c: Point): Boolean {
     val s1 = c.y - a.y
     val s2 = c.x - a.x
     val s3 = b.y - a.y
@@ -55,9 +53,5 @@ fun isPointInTriangle(p: TouchInputHandler.Point, a: TouchInputHandler.Point, b:
     val w2 = (s4 - w1 * s3) / s1
 
     return w1 >= 0 && w2 >= 0 && (w1 + w2) <= 1
-}
-
-fun isPointInSquare(p: TouchInputHandler.Point, a: TouchInputHandler.Point, b: TouchInputHandler.Point, c: TouchInputHandler.Point, d: TouchInputHandler.Point): Boolean {
-    return isPointInTriangle(p, a, b, c) || isPointInTriangle(p, a, d, c)
 }
 

@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,7 +28,6 @@ fun ColorPickerPreview() {
     ColorPicker(MainViewModel(), "Grid")
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ColorPicker(viewModel: MainViewModel, colorPickerType: String) {
     val colorList by viewModel.colorList.observeAsState()

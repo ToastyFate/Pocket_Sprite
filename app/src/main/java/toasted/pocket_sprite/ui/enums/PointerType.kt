@@ -1,11 +1,7 @@
 package toasted.pocket_sprite.ui.enums
 
-enum class PointerType(val type: String) {
-    STYLUS(
-        "Stylus",
-    ),
+enum class PointerType {
+    STYLUS,
 
-    FINGER(
-        "Finger",
-    )
+    FINGER
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
@@ -95,7 +96,9 @@ class StartViewModel : ViewModel() {
             val projectDir = File("MyProjects/$projectName")
             projectDir.mkdir()
             val projectFile = File(projectDir, "$projectName.psp")
-            projectFile.createNewFile()
+            withContext(Dispatchers.IO) {
+                projectFile.createNewFile()
+            }
             projectFile.writeText(data)
         }
     }

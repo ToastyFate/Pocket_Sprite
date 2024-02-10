@@ -36,7 +36,7 @@ fun SettingsMenuPreview() {
 
 @Composable
 fun SettingsMenu(viewModel: MainViewModel) {
-    val gridEnabled = viewModel.gridEnabled.observeAsState(initial = true)
+    val gridEnabled = viewModel.gridMgr.gridEnabled.observeAsState(initial = true)
     Box(modifier = Modifier
         .size(300.dp, 500.dp)
         .background(color = MaterialTheme.colorScheme.background, MaterialTheme.shapes.extraSmall)
@@ -57,7 +57,7 @@ fun SettingsMenu(viewModel: MainViewModel) {
                     MaterialTheme.typography.titleLarge, modifier = Modifier
                     .padding(top = 9.dp)
                 )
-                Switch(checked = gridEnabled.value,  onCheckedChange = { viewModel.toggleGridEnabled() }
+                Switch(checked = gridEnabled.value,  onCheckedChange = { viewModel.gridMgr.toggleGridEnabled() }
                     , modifier = Modifier
                     .padding(start = 8.dp)
                 )
@@ -77,7 +77,7 @@ fun SettingsMenu(viewModel: MainViewModel) {
 
 @Composable
 fun ColorPickerButton(viewModel: MainViewModel, modifier: Modifier) {
-    val gridColor by viewModel.gridColor.observeAsState(initial = Color.Black)
+    val gridColor by viewModel.gridMgr.gridColor.observeAsState(initial = Color.Black)
     val colorPickerEnabled by viewModel.colorPickerEnabled.observeAsState(initial = false)
     val colorList by viewModel.colorList.observeAsState()
     val colors = colorList ?: return
