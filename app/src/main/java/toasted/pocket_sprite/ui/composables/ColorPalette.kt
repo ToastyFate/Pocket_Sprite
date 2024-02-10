@@ -39,7 +39,7 @@ fun ColorPalette(viewModel: MainViewModel) {
             .size(6 * 27.dp, numRows * 27.dp)
         ) {
             for (j in 0 until numRows) {
-                Log.d("TouchTest", "row: ${j} ${numRows}")
+                Log.d("TouchTest", "row: $j $numRows")
                 Row(horizontalArrangement = Arrangement.Absolute.Left, modifier = Modifier
                         .wrapContentSize(Alignment.Center)
                         .background(
@@ -58,7 +58,7 @@ fun ColorPalette(viewModel: MainViewModel) {
                             .pointerInteropFilter { event ->
                                 when (event.action) {
                                     MotionEvent.ACTION_DOWN -> {
-                                        viewModel.bmpManager.setSelectedColor(colors[i + (j * 6)])
+                                        viewModel.setSelectedColor(colors[i + (j * 6)])
                                         true
                                     }
 

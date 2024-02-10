@@ -2,9 +2,12 @@ package toasted.pocket_sprite.tools
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
-import toasted.pocket_sprite.util.interpolatePoints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import toasted.pocket_sprite.util.Coordinate
 import toasted.pocket_sprite.viewmodel.MainViewModel
 
 class BrushTool: ICanvasTool  {
@@ -17,36 +20,40 @@ class BrushTool: ICanvasTool  {
         TODO()
     }
 
-    override fun executeTouch(viewModel: MainViewModel, change: PointerInputChange, pointerInput: PointerInputScope) {
+    @OptIn(ExperimentalComposeUiApi::class)
+    override fun executeTouch(viewModel: MainViewModel, change: PointerInputChange, pointerInput: PointerInputScope, density: Density) {
         val bitmapManager = viewModel.bmpManager
-        val scale = bitmapManager.scale.value ?: return
-        val selectedColor = bitmapManager.selectedColor.value ?: return
-        val bitmap = bitmapManager.bitmap.value ?: return
+        val selectedColor = viewModel.selectedColor.value ?: return
+        val canvasHeight = viewModel.canvasHeight.value ?: return
+        val canvasWidth = viewModel.canvasWidth.value ?: return
+        val gridCellSize = viewModel.gridMgr.gridCellSize.value ?: return
+        val width = with(density) {canvasWidth.dp.toPx()}
+        val height = with(density) {canvasHeight.dp.toPx()}
+        val canvasTouchCoordinate = Coordinate(change.position.x.toInt(), change.position.y.toInt())
+        val prevCanvasTouchCoordinate = Coordinate(change.previousPosition.x.toInt(),
+            change.previousPosition.y.toInt())
 
-        val event = change.position
-        val x =
-            (event.x / scale).toInt() // Convert to bitmap coordinates
-        val y =
-            (event.y / scale).toInt() // Convert to bitmap coordinates
-        if (x >= 0 && x < bitmap.width && y >= 0 && y < bitmap.height) {
-            val prevX = (change.previousPosition.x / scale).toInt()
-            val prevY = (change.previousPosition.y / scale).toInt()
+        if (canvasTouchCoordinate.x in 0..<width.toInt() &&
+            canvasTouchCoordinate.y in 0 ..<height.toInt()) {
 
-            val interpolatedPoints = interpolatePoints(prevX, prevY, x, y)
-
-            for (point in interpolatedPoints) {
-                if (point.x >= 0 && point.x < bitmap.width && point.y >= 0 && point.y < bitmap.height) {
-//                    val pointInCell = viewModel.touchHandler.getPointCell(viewModel, point)
-//                    if (viewModel.touchHandler.pixelPerfectTouch(event, pointInCell.x, pointInCell.y)
-//                    )
-                    bitmapManager.setPixel(point.x, point.y, selectedColor)
+            val interpolatedCoordinates = viewModel.gridMgr.interpolatePoints(prevCanvasTouchCoordinate, canvasTouchCoordinate)
+            if (viewModel.touchHandler.pixelPerfectEnabled.value == true){
+                val pixelPerfectCoordinates = mutableListOf<Coordinate>()
+                for (coordinate in interpolatedCoordinates){
+                    val coordinateCell = viewModel.touchHandler.getPointCell(gridCellSize, coordinate)
+                    if (coordinateCell !in pixelPerfectCoordinates) {
+                        viewModel.touchHandler.pixelPerfectTouch(coordinate, coordinateCell.x, coordinateCell.y, gridCellSize).let {
+                            if (it) {
+                                pixelPerfectCoordinates.add(coordinateCell)
+                            }
+                        }
+                    }
                 }
+
             }
-
+            bitmapManager.updateCells(interpolatedCoordinates, viewModel.gridMgr.gridCellSize.value ?: 1, selectedColor)
         }
-
         change.consume()
         bitmapManager.getCurrentBitmap()?.let { bitmapManager.updateBitmap(it) }
-
     }
 }
